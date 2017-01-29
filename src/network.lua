@@ -60,7 +60,9 @@ function network.server()
 	end
 
 	function server:update(dt)
-		local data, host, port = self:recv()
+		local data
+		repeat data = self:recv() until not data
+
 		for i, client in ipairs(self.clients) do
 			client:send("tick")
 		end
@@ -104,7 +106,9 @@ function network.client(host)
 	end
 
 	function client:update(dt)
-		local data = self:recv()
+		local data
+		repeat data = self:recv() until not data
+
 		if love.math.random() < 0.01 then self:send("hello") end
 	end
 
