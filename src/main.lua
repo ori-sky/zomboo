@@ -1,5 +1,6 @@
 local network = require "network"
-local server
+
+local server, client
 
 function love.load()
 	io.stdout:setvbuf "no"
