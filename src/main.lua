@@ -1,6 +1,26 @@
 local network = require "network"
 
-local server, client
+local game = {}
+
+function game:create()
+	self.server = network.server()
+	self.client = network.client()
+
+	self.x = 0
+	self.y = 0
+end
+
+function game:update(dt)
+	self.server:update(dt)
+	self.client:update(dt)
+
+	self.x = self.x + 10 * dt
+end
+
+function game:draw()
+	love.graphics.setColor(255, 120, 0)
+	love.graphics.rectangle("fill", self.x, 0, 128, 72)
+end
 
 function love.load()
 	io.stdout:setvbuf "no"
@@ -16,15 +36,13 @@ function love.load()
 		minheight = 360,
 		highdpi = false
 	})
-	server = network.server()
-	client = network.client()
+	game:create()
 end
 
 function love.update(dt)
-	server:update(dt)
-	client:update(dt)
+	game:update(dt)
 end
 
 function love.draw()
-	love.graphics.setColor(255, 255, 255)
+	game:draw()
 end
