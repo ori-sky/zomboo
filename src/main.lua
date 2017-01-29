@@ -21,7 +21,7 @@ end
 
 function love.update(dt)
 	server:update(dt)
-	client:update()
+	client:update(dt)
 end
 
 function love.draw()
