@@ -1,3 +1,3 @@
 .PHONY: run
 run:
-	"$(LOVE)" .
+	"$(LOVE)" src
