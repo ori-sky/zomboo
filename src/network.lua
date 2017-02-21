@@ -1,8 +1,61 @@
+local struct = require "struct"
 local socket = require "socket"
 local network = {}
 
 network.PORT = 13337
 
+function network.message(id)
+	local message = {}
+
+	message.id = id
+
+	function message:pack()
+		return struct.pack("c2I2", "ZB", self.id)
+	end
+
+	function message:dump()
+		print("ZB", string.format("0x%04x", self.id))
+	end
+
+	return message
+end
+
+function network.messager()
+	local messager = {}
+
+	messager.id = 0
+
+	function messager:new()
+		local msg = network.message(self.id)
+		self.id = self.id + 1
+		if self.id > 65535 then self.id = 0 end
+		return msg
+	end
+
+	return messager
+end
+
+function network.server()
+	local server = {}
+
+	server.socket = socket.udp()
+	server.socket:settimeout(0)
+	server.socket:setsockname("*", network.PORT)
+
+	function server:unpack(data)
+		local proto, id = struct.unpack("c2I2", data)
+		print(proto, id)
+	end
+
+	function server:recv()
+		local data = network.message(5):pack()
+		self.unpack(data)
+	end
+
+	return server
+end
+
+--[[
 function network.server()
 	local server = {}
 
@@ -114,5 +167,6 @@ function network.client(host)
 
 	return client
 end
+]]--
 
 return network
