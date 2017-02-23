@@ -5,7 +5,6 @@ return function()
 	local server = {}
 	server.TIMESTEP = 1 / 25
 	server.accumulator = 0
-	server.m = network.messager()
 	server.server = network.server()
 
 	function server.print(msg)
@@ -21,9 +20,10 @@ return function()
 	end
 
 	function server:tick(dt)
-		local msg = self.m:new()
-		local status, err = pcall(function() self.server:unpack(msg:pack()) end)
-		if not status then self.print(err) end
+		local msg = self.server:recv()
+		if msg then
+			self.print("recv: "..msg:str())
+		end
 	end
 
 	return server

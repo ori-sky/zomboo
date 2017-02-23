@@ -2,22 +2,41 @@ local struct = require "struct"
 local socket = require "socket"
 local network = {}
 
-network.PORT = 13337
+network.port = 13337
 
-function network.message(id)
+network.proto = {
+	null    = 0,
+	hello   = 1,
+	goodbye = 2
+}
+
+function network.message(id, cmd)
+	if not cmd then cmd = network.proto.null end
+
 	local message = {}
 
 	message.id = id
+	message.cmd = cmd
 
 	function message:pack()
-		return struct.pack("c2I2", "ZB", self.id)
+		return struct.pack("c2I2I2", "ZB", self.id, self.cmd)
+	end
+
+	function message:str()
+		return "ZB id="..string.format("0x%04x", self.id)..", cmd="..string.format("0x%04x", self.cmd)
 	end
 
 	function message:dump()
-		print("ZB", string.format("0x%04x", self.id))
+		print(self:str())
 	end
 
 	return message
+end
+
+function network.unpackMessage(data)
+	local proto, id, cmd = struct.unpack("c2I2I2", data)
+	assert(proto == "ZB", "unknown protocol")
+	return network.message(id, cmd)
 end
 
 function network.messager()
@@ -25,7 +44,7 @@ function network.messager()
 
 	messager.id = 0
 
-	function messager:new()
+	function messager:create()
 		local msg = network.message(self.id)
 		self.id = self.id + 1
 		if self.id > 65535 then self.id = 0 end
@@ -38,87 +57,31 @@ end
 function network.server()
 	local server = {}
 
+	server.messager = network.messager()
+
 	server.socket = socket.udp()
 	server.socket:settimeout(0)
-	server.socket:setsockname("*", network.PORT)
-
-	function server:unpack(data)
-		local proto, id = struct.unpack("c2I2", data)
-		print(proto, id)
-	end
+	server.socket:setsockname("*", network.port)
 
 	function server:recv()
-		local data = network.message(5):pack()
-		self.unpack(data)
-	end
-
-	return server
-end
-
---[[
-function network.server()
-	local server = {}
-
-	server._socket = socket.udp()
-	server._socket:settimeout(0)
-	server._socket:setsockname("*", network.PORT)
-
-	server.clients = {}
-
-	function server.print(msg)
-		print("[SERVER] "..msg)
-	end
-
-	function server:newClient(host, port)
-		local client = {}
-
-		client.server = self
-		client.host = host
-		client.port = port
-
-		function client:send(data)
-			self.server:sendto(data, self.host, self.port)
-		end
-
-		return client
-	end
-
-	function server:accept(host, port)
-		table.insert(self.clients, self:newClient(host, port))
-		self.print("accept from "..host..":"..port)
-	end
-
-	function server:recv()
-		local data, msg_or_host, port = self._socket:receivefrom()
+		local data, err_or_host, port = self.socket:receivefrom()
 
 		if data then
-			self.print("recvfrom "..msg_or_host..":"..port.." "..data)
-			if data == "hello" then
-				self:accept(msg_or_host, port)
-			end
-		elseif msg_or_host ~= "timeout" then
-			self.print("socket error: "..msg_or_host)
+			return network.unpackMessage(data)
+		elseif err_or_host ~= "timeout" then
+			self.print("socket error: "..err_or_host)
 		end
 
-		return data, msg_or_host, port
+		return nil
 	end
 
-	function server:sendto(data, host, port)
-		local success, msg = self._socket:sendto(data, host, port)
-		if success then
-			self.print("sendto "..host..":"..port.." "..data)
-		else
-			self.print("socket error: "..msg)
+	function server:send(message, host)
+		print(self.socket)
+		local success, err = self.socket:sendto(message:pack(), host, network.port)
+		if not success then
+			self.print("socket error: "..err)
 		end
-	end
-
-	function server:update(dt)
-		local data
-		repeat data = self:recv() until not data
-
-		for i, client in ipairs(self.clients) do
-			client:send("tick")
-		end
+		return success
 	end
 
 	return server
@@ -129,44 +92,37 @@ function network.client(host)
 
 	local client = {}
 
-	client._socket = socket.udp()
-	client._socket:settimeout(0)
-	client._socket:setpeername(host, network.PORT)
+	client.messager = network.messager()
+
+	client.socket = socket.udp()
+	client.socket:settimeout(0)
+	client.socket:setpeername(host, network.port)
 
 	function client.print(msg)
 		print("[CLIENT] "..msg)
 	end
 
 	function client:recv()
-		local data, msg = self._socket:receive()
+		local data, err_or_host, port = self.socket:receive()
 
 		if data then
-			self.print("recv "..data)
-		elseif msg ~= "timeout" then
-			self.print("socket error: "..msg)
+			return network.unpackMessage(data)
+		elseif err_or_host ~= "timeout" then
+			self.print("socket error: "..msg_or_host)
 		end
 
-		return data
+		return nil
 	end
 
-	function client:send(data)
-		local success, msg = self._socket:send(data)
-		if success then
-			self.print("send "..data)
-		else
-			self.print("socket error: "..msg)
+	function client:send(message)
+		local success, err = self.socket:send(message:pack())
+		if not success then
+			self.print("socket error: "..err)
 		end
-	end
-
-	function client:update(dt)
-		local data
-		repeat data = self:recv() until not data
-
-		if love.math.random() < 0.01 then self:send("hello") end
+		return success
 	end
 
 	return client
 end
-]]--
 
 return network

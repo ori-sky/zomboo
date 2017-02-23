@@ -1,8 +1,10 @@
+local network = require "network"
 local point = require "point"
 
 return function()
 	local client = {}
 
+	client.client = network.client()
 	client.pos = point()
 
 	function client.print(msg)
@@ -10,6 +12,11 @@ return function()
 	end
 
 	function client:update(dt)
+		self.client:recv()
+
+		local msg = self.client.messager:create()
+		self.client:send(msg)
+
 		local dir = point()
 		if love.keyboard.isDown("a") then dir.x = dir.x - 1 end
 		if love.keyboard.isDown("d") then dir.x = dir.x + 1 end
