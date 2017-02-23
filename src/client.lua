@@ -1,4 +1,5 @@
 local network = require "network"
+local proto = require "network/proto"
 local point = require "point"
 
 return function()
@@ -14,7 +15,7 @@ return function()
 	function client:update(dt)
 		self.client:recv()
 
-		local msg = self.client.messager:create()
+		local msg = self.client.messager:create(proto.hello)
 		self.client:send(msg)
 
 		local dir = point()

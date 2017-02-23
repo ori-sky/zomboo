@@ -10,8 +10,8 @@ function network.messager()
 
 	messager.id = 0
 
-	function messager:create()
-		local msg = message.new(self.id)
+	function messager:create(cmd)
+		local msg = message.new(self.id, cmd)
 		self.id = self.id + 1
 		if self.id > 65535 then self.id = 0 end
 		return msg
