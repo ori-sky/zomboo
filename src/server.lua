@@ -3,7 +3,7 @@ local network = require "network"
 
 return function()
 	local server = {}
-	server.TIMESTEP = 1 / 25
+	server.timestep = 1 / 25
 	server.accumulator = 0
 	server.server = network.server()
 
@@ -13,9 +13,9 @@ return function()
 
 	function server:update(dt)
 		self.accumulator = self.accumulator + dt
-		if self.accumulator >= self.TIMESTEP then
-			self:tick(self.TIMESTEP)
-			self.accumulator = self.accumulator - self.TIMESTEP
+		if self.accumulator >= self.timestep then
+			self:tick(self.timestep)
+			self.accumulator = self.accumulator - self.timestep
 		end
 	end
 
