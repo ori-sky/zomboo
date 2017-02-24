@@ -1,4 +1,5 @@
 local socket = require "socket"
+local proto = require "network/proto"
 local message = require "network/message"
 
 local network = {}
@@ -29,23 +30,42 @@ function network.server()
 	server.socket:settimeout(0)
 	server.socket:setsockname("*", network.port)
 
+	server.clients = {}
+
 	function server:recv()
 		local data, err_or_host, port = self.socket:receivefrom()
 
 		if data then
-			return message.unpack(data)
+			local success, msg = pcall(function() return message.unpack(data) end)
+			if not success then
+				print("dropping unknown message")
+				return nil
+			end
+
+			if msg.cmd == proto.hello then
+				self.clients[err_or_host..":"..port] = {
+					host = err_or_host,
+					port = port,
+					x = 0,
+					y = 0
+				}
+				self:send(self.messager:create(proto.setx), err_or_host, port)
+			elseif self.clients[err_or_host..":"..port] == nil then
+				print("dropping message from unknown client")
+				return nil
+			end
+			return msg
 		elseif err_or_host ~= "timeout" then
-			self.print("socket error: "..err_or_host)
+			print("socket error: "..err_or_host)
 		end
 
 		return nil
 	end
 
-	function server:send(msg, host)
-		print(self.socket)
-		local success, err = self.socket:sendto(msg:pack(), host, network.port)
+	function server:send(msg, host, port)
+		local success, err = self.socket:sendto(msg:pack(), host, port)
 		if not success then
-			self.print("socket error: "..err)
+			print("socket error: "..err)
 		end
 		return success
 	end
@@ -64,17 +84,13 @@ function network.client(host)
 	client.socket:settimeout(0)
 	client.socket:setpeername(host, network.port)
 
-	function client.print(msg)
-		print("[CLIENT] "..msg)
-	end
-
 	function client:recv()
 		local data, err_or_host, port = self.socket:receive()
 
 		if data then
-			return network.unpackMessage(data)
+			return message.unpack(data)
 		elseif err_or_host ~= "timeout" then
-			self.print("socket error: "..msg_or_host)
+			print("socket error: "..msg_or_host)
 		end
 
 		return nil
@@ -83,7 +99,7 @@ function network.client(host)
 	function client:send(msg)
 		local success, err = self.socket:send(msg:pack())
 		if not success then
-			self.print("socket error: "..err)
+			print("socket error: "..err)
 		end
 		return success
 	end

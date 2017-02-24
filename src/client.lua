@@ -8,14 +8,18 @@ return function()
 	client.client = network.client()
 	client.pos = point()
 
+	client.client:send(client.client.messager:create(proto.hello))
+	client.client.socket:send("asdf")
+
 	function client.print(msg)
 		print("[CLIENT] "..msg)
 	end
 
 	function client:update(dt)
-		self.client:recv()
+		local msg = self.client:recv()
+		if msg then self.print(msg:str()) end
 
-		local msg = self.client.messager:create(proto.hello)
+		local msg = self.client.messager:create(proto.setx)
 		self.client:send(msg)
 
 		local dir = point()
