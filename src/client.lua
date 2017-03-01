@@ -15,11 +15,19 @@ return function()
 		print("[CLIENT] "..msg)
 	end
 
-	function client:update(dt)
-		local msg = self.client:recv()
-		if msg then self.print(msg:str()) end
+	function client:debug(msg)
+		self.print("[DEBUG] "..msg)
+	end
 
-		local msg = self.client.messager:create(proto.setx)
+	function client:update(dt)
+		local err, msg = self.client:recv()
+		if err == network.err.none then
+			self:debug("recv: "..msg:str())
+		elseif err ~= network.err.nodata then
+			self:debug("err: "..err)
+		end
+
+		local msg = self.client.messager:create(proto.setx, 500)
 		self.client:send(msg)
 
 		local dir = point()

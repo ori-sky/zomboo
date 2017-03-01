@@ -11,8 +11,8 @@ function network.messager()
 
 	messager.id = 0
 
-	function messager:create(cmd)
-		local msg = message.new(self.id, cmd)
+	function messager:create(cmd, ...)
+		local msg = message.new(self.id, cmd, ...)
 		self.id = self.id + 1
 		if self.id > 65535 then self.id = 0 end
 		return msg
@@ -20,6 +20,14 @@ function network.messager()
 
 	return messager
 end
+
+network.err = {
+	none    = 0,
+	socket  = 1,
+	nodata  = 2,
+	invalid = 3,
+	noauth  = 4
+}
 
 function network.server()
 	local server = {}
@@ -34,40 +42,42 @@ function network.server()
 
 	function server:recv()
 		local data, err_or_host, port = self.socket:receivefrom()
-
-		if data then
-			local success, msg = pcall(function() return message.unpack(data) end)
-			if not success then
-				print("dropping unknown message")
-				return nil
+		if not data then
+			if err_or_host ~= "timeout" then
+				return network.err.socket
+			else
+				return network.err.nodata
 			end
-
-			if msg.cmd == proto.hello then
-				self.clients[err_or_host..":"..port] = {
-					host = err_or_host,
-					port = port,
-					x = 0,
-					y = 0
-				}
-				self:send(self.messager:create(proto.setx), err_or_host, port)
-			elseif self.clients[err_or_host..":"..port] == nil then
-				print("dropping message from unknown client")
-				return nil
-			end
-			return msg
-		elseif err_or_host ~= "timeout" then
-			print("socket error: "..err_or_host)
 		end
 
-		return nil
+		local success, msg_or_err = pcall(function() return message.unpack(data) end)
+		if not success then
+			return network.err.invalid
+		end
+
+		if msg_or_err.cmd == proto.hello then
+			self.clients[err_or_host..":"..port] = {
+				host = err_or_host,
+				port = port,
+				x = 0,
+				y = 0
+			}
+			local msg = self.messager:create(proto.setx, 500)
+			self:send(msg, err_or_host, port)
+		elseif self.clients[err_or_host..":"..port] == nil then
+			return network.err.noauth, msg_or_err
+		end
+
+		return network.err.none, msg_or_err
 	end
 
 	function server:send(msg, host, port)
 		local success, err = self.socket:sendto(msg:pack(), host, port)
 		if not success then
-			print("socket error: "..err)
+			return network.err.socket
 		end
-		return success
+
+		return network.err.none
 	end
 
 	return server
@@ -87,21 +97,29 @@ function network.client(host)
 	function client:recv()
 		local data, err_or_host, port = self.socket:receive()
 
-		if data then
-			return message.unpack(data)
-		elseif err_or_host ~= "timeout" then
-			print("socket error: "..msg_or_host)
+		if not data then
+			if err_or_host ~= "timeout" then
+				return network.err.socket
+			else
+				return network.err.nodata
+			end
 		end
 
-		return nil
+		local success, msg_or_err = pcall(function() return message.unpack(data) end)
+		if not success then
+			return network.err.invalid
+		end
+
+		return network.err.none, msg_or_err
 	end
 
 	function client:send(msg)
 		local success, err = self.socket:send(msg:pack())
 		if not success then
-			print("socket error: "..err)
+			return network.err.socket
 		end
-		return success
+
+		return network.err.none
 	end
 
 	return client

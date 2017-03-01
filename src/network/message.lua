@@ -1,37 +1,52 @@
 local struct = require "struct"
 local proto = require "network/proto"
+local types = require "network/types"
 
 local message = {}
 
-message.format = "c2I2I2"
+message.format = {
+	[proto.null]    = {},
+	[proto.hello]   = {},
+	[proto.goodbye] = {},
+	[proto.setx]    = {types.f32}
+}
 
-function message.new(id, cmd)
+function message.new(id, cmd, ...)
 	if not cmd then cmd = proto.null end
 
-	local message = {}
+	local msg = {}
 
-	message.id = id
-	message.cmd = cmd
+	msg.id = id
+	msg.cmd = cmd
+	msg.args = {...}
 
-	function message:pack()
-		return struct.pack("c2I2I2", "ZB", self.id, self.cmd)
+	function msg:pack()
+		local fmt = "c2I2I2"
+
+		for k, v in ipairs(message.format[self.cmd]) do
+			fmt = fmt..types.fmt[v]
+		end
+
+		return struct.pack(fmt, "ZB", self.id, self.cmd, unpack(self.args))
 	end
 
-	function message:str()
+	function msg:str()
 		return "ZB id="..string.format("0x%04x", self.id)..", cmd="..string.format("0x%04x", self.cmd)
 	end
 
-	function message:dump()
-		print(self:str())
-	end
-
-	return message
+	return msg
 end
 
 function message.unpack(data)
-	local proto, id, cmd = struct.unpack("c2I2I2", data)
+	local proto, id, cmd, offset = struct.unpack("c2I2I2", data)
 	assert(proto == "ZB", "unknown protocol")
-	return message.new(id, cmd)
+
+	local fmt = ""
+	for k, v in ipairs(message.format[cmd]) do
+		fmt = fmt..types.fmt[v]
+	end
+
+	return message.new(id, cmd, struct.unpack(fmt, data, offset))
 end
 
 return message
