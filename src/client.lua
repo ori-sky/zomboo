@@ -20,15 +20,7 @@ return function()
 	end
 
 	function client:update(dt)
-		local err, msg = self.client:recv()
-		if err == network.err.none then
-			self:debug("recv: "..msg:str())
-		elseif err ~= network.err.nodata then
-			self:debug("err: "..err)
-		end
-
-		local msg = self.client.messager:create(proto.setx, 500)
-		self.client:send(msg)
+		self:recv()
 
 		local dir = point()
 		if love.keyboard.isDown("a") then dir.x = dir.x - 1 end
@@ -37,6 +29,24 @@ return function()
 		if love.keyboard.isDown("s") then dir.y = dir.y + 1 end
 
 		self.pos = self.pos + dir * 10
+	end
+
+	function client:recv()
+		local err, msg = self.client:recv()
+		if err == network.err.none then
+			self:debug("recv: "..msg:str())
+		elseif err ~= network.err.nodata then
+			self:debug("err: "..err)
+		end
+
+		if msg then
+			local switch = {
+				[proto.setx] = function()
+					self.pos.x = msg.args[1]
+				end
+			}
+			if switch[msg.cmd] then switch[msg.cmd]() end
+		end
 	end
 
 	function client:draw()
