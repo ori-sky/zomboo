@@ -1,5 +1,6 @@
 local struct = require "struct"
 local network = require "network"
+local proto = require "network/proto"
 
 return function()
 	local server = {}
@@ -29,6 +30,12 @@ return function()
 			self:debug("recv: "..msg:str())
 		elseif err ~= network.err.nodata then
 			self:debug("err: "..err)
+		end
+		for k, v in pairs(self.server.clients) do
+			local msg = self.server.messager:create(proto.setx, math.random(0, 128))
+			self.server:send(msg, v.host, v.port)
+			local msg = self.server.messager:create(proto.sety, math.random(0, 72))
+			self.server:send(msg, v.host, v.port)
 		end
 	end
 

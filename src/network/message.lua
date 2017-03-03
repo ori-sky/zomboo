@@ -8,7 +8,8 @@ message.format = {
 	[proto.null]    = {},
 	[proto.hello]   = {},
 	[proto.goodbye] = {},
-	[proto.setx]    = {types.f32}
+	[proto.setx]    = {types.f32},
+	[proto.sety]    = {types.f32}
 }
 
 function message.new(id, cmd, ...)

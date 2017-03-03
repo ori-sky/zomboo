@@ -62,8 +62,6 @@ function network.server()
 				x = 0,
 				y = 0
 			}
-			local msg = self.messager:create(proto.setx, 500)
-			self:send(msg, err_or_host, port)
 		elseif self.clients[err_or_host..":"..port] == nil then
 			return network.err.noauth, msg_or_err
 		end

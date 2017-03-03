@@ -38,6 +38,9 @@ return function()
 			local switch = {
 				[proto.setx] = function()
 					self.pos.x = msg.args[1]
+				end,
+				[proto.sety] = function()
+					self.pos.y = msg.args[1]
 				end
 			}
 			if switch[msg.cmd] then switch[msg.cmd]() end
