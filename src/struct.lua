@@ -1,5 +1,6 @@
 --[[
  * Copyright (c) 2015-2016 Iryont <https://github.com/iryont/lua-struct>
+ * Copyright (c) 2017 David Farrell <shokku.ra@gmail.com>
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -112,9 +113,9 @@ function struct.pack(format, ...)
   return table.concat(stream)
 end
 
-function struct.unpack(format, stream)
+function struct.unpack(format, stream, index)
   local vars = {}
-  local iterator = 1
+  local iterator = index or 1
   local endianness = true
 
   for i = 1, format:len() do
@@ -190,6 +191,8 @@ function struct.unpack(format, stream)
       i = i + n:len()
     end
   end
+
+  table.insert(vars, iterator)
 
   return unpack(vars)
 end
