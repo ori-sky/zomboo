@@ -35,17 +35,14 @@ return function()
 		local err, msg = self.client:recv()
 		if err == network.err.none then
 			self:debug("recv: "..msg:str())
-		elseif err ~= network.err.nodata then
-			self:debug("err: "..err)
-		end
-
-		if msg then
 			local switch = {
 				[proto.setx] = function()
 					self.pos.x = msg.args[1]
 				end
 			}
 			if switch[msg.cmd] then switch[msg.cmd]() end
+		elseif err ~= network.err.nodata then
+			self:debug("err: "..err)
 		end
 	end
 
