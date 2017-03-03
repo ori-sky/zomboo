@@ -32,7 +32,11 @@ function message.new(id, cmd, ...)
 	end
 
 	function msg:str()
-		return "ZB id="..string.format("0x%04x", self.id)..", cmd="..string.format("0x%04x", self.cmd)
+		local str = string.format("ZB id=0x%04x cmd=0x%04x", self.id, self.cmd)
+		for k, v in ipairs(self.args) do
+			str = str..string.format(" args%d=0x%04x", k, v)
+		end
+		return str
 	end
 
 	return msg
