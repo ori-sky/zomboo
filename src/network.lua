@@ -40,6 +40,9 @@ function network.server()
 
 	server.clients = {}
 
+	-- packet loss simulation percentage
+	server.packetLoss = 0
+
 	function server:recv()
 		local data, err_or_host, port = self.socket:receivefrom()
 		if not data then
@@ -48,6 +51,10 @@ function network.server()
 			else
 				return network.err.nodata
 			end
+		end
+
+		if math.random(0, 100) < self.packetLoss then
+			return network.err.nodata
 		end
 
 		local success, msg_or_err = pcall(function() return message.unpack(data) end)
@@ -92,6 +99,9 @@ function network.client(host)
 	client.socket:settimeout(0)
 	client.socket:setpeername(host, network.port)
 
+	-- packet loss simulation percentage
+	client.packetLoss = 0
+
 	function client:recv()
 		local data, err_or_host, port = self.socket:receive()
 
@@ -101,6 +111,10 @@ function network.client(host)
 			else
 				return network.err.nodata
 			end
+		end
+
+		if math.random(0, 100) < self.packetLoss then
+			return network.err.nodata
 		end
 
 		local success, msg_or_err = pcall(function() return message.unpack(data) end)

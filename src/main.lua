@@ -6,7 +6,9 @@ local app = {}
 
 function app:create()
 	self.server = server()
+	self.server.server.packetLoss = 50
 	self.client = client()
+	self.client.client.packetLoss = 50
 end
 
 function app:update(dt)
