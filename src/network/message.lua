@@ -47,7 +47,9 @@ function message.unpack(data)
 		fmt = fmt..types.fmt[v]
 	end
 
-	return message.new(id, cmd, struct.unpack(fmt, data, offset))
+	local args = {struct.unpack(fmt, data, offset)}
+	table.remove(args)
+	return message.new(id, cmd, unpack(args))
 end
 
 return message
